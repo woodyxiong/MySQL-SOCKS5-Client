@@ -13,15 +13,15 @@ import (
 var listenAddr = "0.0.0.0"
 var listenPort = "8888"
 
-//var socksServerIp = "172.18.12.70"
-//var socksPort = "10080"
-//var mysqlIp = "10.104.20.42"
-//var mysqlPort = "3306"
-
-var socksServerIp = "49.234.85.242"
-var socksPort = "6666"
-var mysqlIp = "127.0.0.1"
+var socksServerIp = "172.18.12.70"
+var socksPort = "10080"
+var mysqlIp = "10.104.20.42"
 var mysqlPort = "3306"
+
+//var socksServerIp = "49.234.85.242"
+//var socksPort = "6666"
+//var mysqlIp = "127.0.0.1"
+//var mysqlPort = "3306"
 
 func main() {
 	var l net.Listener
@@ -82,7 +82,7 @@ func handleServerConn(localConn net.Conn) {
 	stage = 3
 
 	// 发送需要连接的地址
-	addrBytes := []byte{05, 01, 00}
+	addrBytes := []byte{05, 01, 00, 01}
 	ipBytes := Int32ToBytes(StringIpToInt(mysqlIp))
 	mysqlPortNumber, _ := strconv.Atoi(mysqlPort)
 	portBytes := Int16ToBytes(mysqlPortNumber)
@@ -116,10 +116,6 @@ func handleServerConn(localConn net.Conn) {
 	stage = 5
 	fmt.Println(stage)
 
-	//buf = make([]byte, 1024)
-	//_, err = remoteConn.Read(buf)
-	//fmt.Println(err)
-	//fmt.Println(buf)
 	var isFinished = false
 	wg := sync.WaitGroup{}
 	wg.Add(2)
@@ -134,9 +130,9 @@ func handleBindCon(con1 net.Conn, con2 net.Conn, wg *sync.WaitGroup, isFinished 
 	defer func() { *isFinished = true }()
 	for {
 		buf := make([]byte, 1024)
-		err := con1.SetDeadline(time.Now().Add(2 * time.Second))
+		err := con1.SetReadDeadline(time.Now().Add(2 * time.Second))
 		if err != nil {
-			fmt.Println("read时间过长:", err.Error())
+			fmt.Println("con1 setDeadLine failed:", err.Error())
 			if *isFinished == true {
 				return
 			}
@@ -150,13 +146,17 @@ func handleBindCon(con1 net.Conn, con2 net.Conn, wg *sync.WaitGroup, isFinished 
 					if *isFinished == true {
 						return
 					}
-					fmt.Println("read时间过长:", err.Error())
+					//fmt.Println("read超时等待:", err.Error())
 					continue
 				}
+			}
+			if err.Error() == "EOF" {
+				return
 			}
 			fmt.Println("收包错误:", err.Error())
 			return
 		}
+
 		_, err = con2.Write(buf[:len])
 		if err != nil {
 			fmt.Println("发包错误:", err.Error())
