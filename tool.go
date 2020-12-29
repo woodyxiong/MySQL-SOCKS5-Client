@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-func StringIpToInt(ipstring string) int {
-	ipSegs := strings.Split(ipstring, ".")
+func StringIpToInt(ipString string) int {
+	ipSegs := strings.Split(ipString, ".")
 	var ipInt int = 0
 	var pos uint = 24
 	for _, ipSeg := range ipSegs {
@@ -23,13 +23,13 @@ func StringIpToInt(ipstring string) int {
 func Int32ToBytes(n int) []byte {
 	x := int32(n)
 	bytesBuffer := bytes.NewBuffer([]byte{})
-	binary.Write(bytesBuffer, binary.BigEndian, x)
+	_ = binary.Write(bytesBuffer, binary.BigEndian, x)
 	return bytesBuffer.Bytes()
 }
 
 func Int16ToBytes(n int) []byte {
 	x := int16(n)
 	bytesBuffer := bytes.NewBuffer([]byte{})
-	binary.Write(bytesBuffer, binary.BigEndian, x)
+	_ = binary.Write(bytesBuffer, binary.BigEndian, x)
 	return bytesBuffer.Bytes()
 }

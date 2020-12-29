@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
@@ -10,30 +12,51 @@ import (
 	"time"
 )
 
-var listenAddr = "0.0.0.0"
-var listenPort = "8888"
-
-var socksServerIp = "172.18.12.70"
-var socksPort = "10080"
-var mysqlIp = "10.104.20.42"
-var mysqlPort = "3306"
-
-//var socksServerIp = "49.234.85.242"
-//var socksPort = "6666"
-//var mysqlIp = "127.0.0.1"
-//var mysqlPort = "3306"
+type ConfigStruct struct {
+	Name             string `json:"name"`
+	Socks5ServerIp   string `json:"socks5_server_ip"`
+	Socks5ServerPort string `json:"socks5_server_port"`
+	MysqlIp          string `json:"mysql_ip"`
+	MysqlPort        string `json:"mysql_port"`
+	ListenAddr       string `json:"listen_addr"`
+	ListenPort       string `json:"listen_port"`
+}
 
 func main() {
+	// 打开json文件
+	jsonFile, err := os.Open("config.json")
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	defer jsonFile.Close()
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	var configStructs []ConfigStruct
+	json.Unmarshal([]byte(byteValue), &configStructs)
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	for _, configStruct := range configStructs {
+		go createServer(configStruct, &wg)
+	}
+	wg.Wait()
+}
+
+func createServer(configStruct ConfigStruct, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var l net.Listener
 	var err error
 
-	l, err = net.Listen("tcp", listenAddr+":"+listenPort)
+	l, err = net.Listen("tcp", configStruct.ListenAddr+":"+configStruct.ListenPort)
 	if err != nil {
 		fmt.Println("Error listening:", err)
 		os.Exit(1)
 	}
 	defer l.Close()
-	fmt.Println("Listening on " + listenAddr + ":" + listenPort)
+	fmt.Println("Name : " + configStruct.Name + " Listening on " + configStruct.ListenAddr + ":" + configStruct.ListenPort)
 	for {
 		conn, err := l.Accept()
 		if err != nil {
@@ -43,16 +66,16 @@ func main() {
 		//logs an incoming message
 		fmt.Printf("新用户连接上 %s -> %s \n", conn.RemoteAddr(), conn.LocalAddr())
 		// Handle connections in a new goroutine.
-		go handleServerConn(conn)
+		go handleServerConn(conn, configStruct)
 	}
 }
 
-func handleServerConn(localConn net.Conn) {
+func handleServerConn(localConn net.Conn, configStruct ConfigStruct) {
 	defer localConn.Close()
 	var stage = 0
 
 	// 连接远端
-	remoteConn, err := net.Dial("tcp", socksServerIp+":"+socksPort)
+	remoteConn, err := net.Dial("tcp", configStruct.Socks5ServerIp+":"+configStruct.Socks5ServerPort)
 	if err != nil {
 		fmt.Println("远程连接错误:", err.Error())
 		return
@@ -83,8 +106,8 @@ func handleServerConn(localConn net.Conn) {
 
 	// 发送需要连接的地址
 	addrBytes := []byte{05, 01, 00, 01}
-	ipBytes := Int32ToBytes(StringIpToInt(mysqlIp))
-	mysqlPortNumber, _ := strconv.Atoi(mysqlPort)
+	ipBytes := Int32ToBytes(StringIpToInt(configStruct.MysqlIp))
+	mysqlPortNumber, _ := strconv.Atoi(configStruct.MysqlPort)
 	portBytes := Int16ToBytes(mysqlPortNumber)
 	addrBytes = append(addrBytes, ipBytes...)
 	addrBytes = append(addrBytes, portBytes...)

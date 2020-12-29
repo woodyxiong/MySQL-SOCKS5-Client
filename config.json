@@ -1,0 +1,21 @@
+[
+  {
+    "name": "example1",
+    "socks5_server_ip": "0.0.0.0",
+    "socks5_server_port": "1080",
+    "mysql_ip": "10.10.10.10",
+    "mysql_port": "3306",
+    "listen_addr": "0.0.0.0",
+    "listen_port": "6666"
+  },
+  {
+    "name": "example12",
+    "socks5_server_ip": "1.1.1.1",
+    "socks5_server_port": "1080",
+    "mysql_ip": "11.11.11.11",
+    "mysql_port": "3306",
+    "listen_addr": "0.0.0.0",
+    "listen_port": "8888"
+  }
+]
+
